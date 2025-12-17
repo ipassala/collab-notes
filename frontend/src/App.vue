@@ -1,11 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useUserStore } from '@/stores/users';
+import LoginDialog from './components/LoginDialog.vue';
+import BoardView from './components/BoardView.vue';
+
+const userStore = useUserStore();
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <main class="w-full h-screen font-sans antialiased text-gray-900 bg-gray-100">
+    <LoginDialog v-if="!userStore.currentUser" />
+    <BoardView v-else />
+  </main>
 </template>
 
-<style scoped></style>

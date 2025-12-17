@@ -6,17 +6,20 @@ export default function socketHandlers(io, socket) {
 
     // --- 1. Registrar usuario ---
     socket.on("user:join", ({ name }) => {
+        console.log(`👤 User joining: ${name} (${socket.id})`);
         state.users[socket.id] = { name };
         io.emit("presence:users", { users: Object.values(state.users) });
     });
 
     // --- 2. Inicializar tablero ---
     socket.on("board:init", () => {
+        console.log(`📋 Board init requested by ${socket.id}`);
         socket.emit("board:data", { notes: state.notes });
     });
 
     // --- 3. Crear nota ---
     socket.on("note:create", (data) => {
+        console.log(`📝 Creating note:`, data);
         try {
             const note = createNote({
                 ...data, user:
@@ -31,6 +34,7 @@ export default function socketHandlers(io, socket) {
 
     // --- 4. Actualizar nota ---
     socket.on("note:update", (note) => {
+        console.log(`🔄 Updating note ${note.id}:`, note);
         try {
             const i = state.notes.findIndex((n) => n.id === note.id);
             if (i !== -1) {
@@ -49,6 +53,7 @@ export default function socketHandlers(io, socket) {
 
     // --- 5. Eliminar nota ---
     socket.on("note:delete", ({ id }) => {
+        console.log(`🗑️ Deleting note ${id}`);
         try {
             state.notes = state.notes.filter((n) => n.id !== id);
             io.emit("note:deleted", { id });
@@ -61,6 +66,7 @@ export default function socketHandlers(io, socket) {
 
     // --- 6. Agregar comentario ---
     socket.on("note:comment", ({ noteId, text }) => {
+        console.log(`💬 Adding comment to ${noteId}: ${text}`);
         try {
             const note = state.notes.find((n) => n.id === noteId);
             if (note) {

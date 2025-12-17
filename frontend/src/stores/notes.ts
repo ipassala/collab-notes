@@ -5,6 +5,19 @@ import type { Note, NoteCreatePayload, NoteUpdatePayload, NoteDeletePayload, Not
 
 export const useNoteStore = defineStore("notes", () => {
     const notes = ref<Note[]>([]);
+    const maxZIndex = ref(1);
+    const zIndexMap = ref<Map<string, number>>(new Map());
+
+    // Funciones para z-index
+
+    function bringToFront(noteId: string) {
+        maxZIndex.value += 1;
+        zIndexMap.value.set(noteId, maxZIndex.value);
+    }
+
+    function getZIndex(noteId: string): number {
+        return zIndexMap.value.get(noteId) || 1;
+    }
 
     // Acciones
 
@@ -36,6 +49,7 @@ export const useNoteStore = defineStore("notes", () => {
 
     socket.on("note:created", (payload: Note) => {
         notes.value.push(payload);
+        bringToFront(payload.id);
     });
 
     socket.on("note:updated", (payload: Note) => {
@@ -65,5 +79,7 @@ export const useNoteStore = defineStore("notes", () => {
         updateNote,
         deleteNote,
         addComment,
+        bringToFront,
+        getZIndex,
     };
 });
