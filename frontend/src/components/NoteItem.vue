@@ -212,7 +212,14 @@ const { isResizing, onResizeStart } = useResizable(
 
         <!-- Footer / Comments Trigger -->
         <div class="note-footer">
-            <span class="truncate max-w-[100px]">{{ note.updatedBy ? `By: ${note.updatedBy}` : '' }}</span>
+            <div class="footer-info">
+                <span v-if="note.updatedBy" class="footer-user">
+                    Last updated by: {{ note.updatedBy }}
+                </span>
+                <span v-if="note.timestamp">
+                    {{ new Date(note.timestamp).toLocaleString() }}
+                </span>
+            </div>
             <button @click="toggleComments" class="comment-trigger-btn">
                 <span class="text-sm leading-none">🗨</span>
                 <span>{{ note.comments ? note.comments.length : 0 }}</span>
@@ -383,6 +390,21 @@ const { isResizing, onResizeStart } = useResizable(
 
     /* spacing */
     px-2 py-0.5;
+}
+
+.footer-info {
+    @apply 
+    /* layout */
+    flex flex-col 
+    
+    /* typography */
+    text-[10px] text-gray-400;
+}
+
+.footer-user {
+    @apply 
+    /* layout */
+    truncate max-w-[120px];
 }
 
 .locked-overlay {

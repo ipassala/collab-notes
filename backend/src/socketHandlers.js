@@ -38,9 +38,16 @@ export default function socketHandlers(io, socket) {
         try {
             const i = state.notes.findIndex((n) => n.id === note.id);
             if (i !== -1) {
+                // La fecha y el usuario solo cambian si el contenido de la nota cambió
+                const hasContentUpdates = note.title !== undefined || note.content !== undefined;
+
                 state.notes[i] = {
-                    ...state.notes[i], ...note, updatedBy:
-                        state.users[socket.id]?.name
+                    ...state.notes[i],
+                    ...note,
+                    ...(hasContentUpdates ? {
+                        updatedBy: state.users[socket.id]?.name,
+                        timestamp: Date.now()
+                    } : {})
                 };
                 io.emit("note:updated", state.notes[i]);
             }
@@ -86,7 +93,6 @@ export default function socketHandlers(io, socket) {
 
     // --- 7. Manejar bloqueo/edición ---
     socket.on("note:editing", ({ noteId, isEditing }) => {
-        // console.log(`🔒 Editing state change: Node ${noteId} -> ${isEditing} by ${socket.id}`);
         try {
             const note = state.notes.find((n) => n.id === noteId);
             if (note) {

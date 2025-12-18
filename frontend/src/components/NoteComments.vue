@@ -43,7 +43,10 @@ function addComment() {
         <!-- Scrollable List of Comments -->
         <div class="comments-list">
             <div v-for="comment in comments" :key="comment.id" class="comment-item">
-                <span class="user-name">{{ comment.user }}</span>
+                <div class="flex justify-between items-baseline mb-1">
+                    <span class="user-name">{{ comment.user }}</span>
+                    <span class="text-[10px] text-gray-400">{{ new Date(comment.timestamp).toLocaleString() }}</span>
+                </div>
                 <p class="comment-text">{{ comment.text }}</p>
             </div>
             <!-- Empty State Message -->
