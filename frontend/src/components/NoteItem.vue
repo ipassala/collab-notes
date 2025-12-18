@@ -248,12 +248,14 @@ const { isResizing, onResizeStart } = useResizable(
         </div>
         
         <!-- Comments Section (Overlay) -->
-        <NoteComments 
-            v-if="showComments" 
-            :note-id="note.id" 
-            :comments="note.comments" 
-            @close="toggleComments"
-        />
+        <Transition name="comments-slide">
+            <NoteComments 
+                v-if="showComments" 
+                :note-id="note.id" 
+                :comments="note.comments" 
+                @close="toggleComments"
+            />
+        </Transition>
     </div>
 
     <!-- Resize Handle -->
@@ -263,6 +265,18 @@ const { isResizing, onResizeStart } = useResizable(
 
 <style scoped>
 @import "tailwindcss";
+
+/* Comments Slide Transition */
+.comments-slide-enter-active,
+.comments-slide-leave-active {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.comments-slide-enter-from,
+.comments-slide-leave-to {
+    transform: translateY(100%);
+    opacity: 0;
+}
 
 .note-wrapper {
     @apply 

@@ -8,18 +8,23 @@ import { ref } from 'vue';
 import type { Comment } from '@/types';
 import { useNoteStore } from '@/stores/notes';
 
+// Props
 const props = defineProps<{
     noteId: string;
     comments: Comment[];
 }>();
 
+// Emits
+// Define un emit para cerrar el overlay con una función externa
 const emit = defineEmits<{
     (e: 'close'): void;
 }>();
 
+// Stores
 const noteStore = useNoteStore();
 const newComment = ref('');
 
+// Methods
 function addComment() {
     if (newComment.value.trim()) {
         noteStore.addComment(props.noteId, newComment.value.trim());
@@ -36,7 +41,7 @@ function addComment() {
         <div class="comments-header">
             <h4 class="header-title">Comments</h4>
             <button @click="emit('close')" class="close-btn">
-                <span class="close-icon-text">❌</span>
+                <span class="close-icon-text">🔽</span>
             </button>
         </div>
 
@@ -67,7 +72,7 @@ function addComment() {
                 @click="addComment"
                 :disabled="!newComment.trim()"
                 class="post-btn"
-                >Post</button>
+                >✔</button>
             </div>
         </div>
     </div>
@@ -79,7 +84,7 @@ function addComment() {
 .comments-overlay {
     @apply 
     /* position */
-    absolute inset-0 z-10 
+    absolute inset-0 m-auto z-10
     
     /* layout */
     flex flex-col
@@ -112,7 +117,10 @@ function addComment() {
     text-gray-400 
     
     /* interaction */
-    hover:text-gray-600;
+    hover:text-gray-600
+
+    /* cursor */
+    cursor-pointer;
 }
 
 .close-icon-text {
@@ -193,6 +201,9 @@ function addComment() {
     font-bold text-sm text-blue-600 hover:text-blue-800 
     
     /* disabled state */
-    disabled:opacity-50;
+    disabled:opacity-50
+
+    /* cursor */
+    cursor-pointer;
 }
 </style>
