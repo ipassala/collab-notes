@@ -92,20 +92,17 @@ export default function socketHandlers(io, socket) {
             if (note) {
                 if (isEditing) {
                     // Si intenta editar, verificamos que no esté bloqueada por otro
-                    if (!note.editing || note.editing.user === state.users[socket.id]?.name) {
+                    if (!note.editing || note.editing === state.users[socket.id]?.name) {
                         // Calcular nuevo z-index
                         const currentMaxResponse = state.notes.reduce((max, n) => Math.max(max, n.zIndex || 0), 0);
                         note.zIndex = currentMaxResponse + 1;
 
-                        note.editing = {
-                            state: true,
-                            user: state.users[socket.id]?.name || "unknown"
-                        };
+                        note.editing = state.users[socket.id]?.name || "unknown";
                         io.emit("note:updated", note);
                     }
                 } else {
                     // Si deja de editar, liberamos solo si era el dueño del bloqueo
-                    if (note.editing && note.editing.user === state.users[socket.id]?.name) {
+                    if (note.editing === state.users[socket.id]?.name) {
                         note.editing = null;
                         io.emit("note:updated", note);
                     }
@@ -122,7 +119,7 @@ export default function socketHandlers(io, socket) {
 
         // Liberar notas bloqueadas por este usuario
         state.notes.forEach(note => {
-            if (note.editing && note.editing.user === userName) {
+            if (note.editing === userName) {
                 note.editing = null;
                 io.emit("note:updated", note);
             }

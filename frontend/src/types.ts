@@ -17,9 +17,11 @@ export interface Note {
     content: string;
     x: number;
     y: number;
+    width: number;
+    height: number;
     zIndex: number;
     updatedBy: string;
-    editing: { state: boolean; user: string } | null;
+    editing: string | null;
     comments: Comment[];
     timestamp: number;
 }

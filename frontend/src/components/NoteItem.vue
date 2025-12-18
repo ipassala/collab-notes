@@ -13,6 +13,7 @@ import { ref, watch, computed } from 'vue';
 import type { Note } from '@/types';
 import { useNoteStore } from '@/stores/notes';
 import { useUserStore } from '@/stores/users';
+import { useResizable } from '@/composables/useResizable';
 import { useDragAndDrop } from '@/composables/useDragAndDrop';
 import NoteComments from './NoteComments.vue';
 
@@ -21,7 +22,7 @@ const props = defineProps<{
   note: Note; 
 }>();
 
-// Store
+// Stores
 const noteStore = useNoteStore();
 const userStore = useUserStore();
 
@@ -35,9 +36,7 @@ const currentContent = ref(props.note.content);
 const showComments = ref(false);
 
 // Computed
-const isLocked = computed(() => {
-    return !!(props.note.editing && props.note.editing.state && props.note.editing.user !== userStore.currentUser?.name);
-});
+const isLocked = computed(() => !!props.note.editing && props.note.editing !== userStore.currentUser?.name);
 
 // Watcher para el título de la nota
 watch(() => props.note.title, (val) => {
@@ -110,52 +109,82 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     },
   }
 );
+
+// Manejo del redimensionamiento
+const { isResizing, onResizeStart } = useResizable(
+    () => ({ width: props.note.width, height: props.note.height }),
+    (size) => {
+        props.note.width = size.width;
+        props.note.height = size.height;
+    },
+    isLocked,
+    {
+        onResizeStart: () => {
+            noteStore.setEditing(props.note.id, true);
+        },
+        onResizeEnd: (size) => {
+            noteStore.updateNote({ 
+                id: props.note.id, 
+                width: size.width, 
+                height: size.height 
+            });
+            noteStore.setEditing(props.note.id, false);
+        }
+    }
+);
 </script>
 
 <template>
   <div 
     class="note-wrapper group"
     :class="{ 
-      'transition-all duration-300 ease-out': !isDragging,
-      'select-none': note.zIndex !== noteStore.maxZIndex,
-      'select-text': note.zIndex === noteStore.maxZIndex
+      'transition-all duration-300 ease-out': !isDragging && !isResizing,
+      'select-none': note.zIndex !== noteStore.maxZIndex || isDragging || isResizing,
+      'select-text': note.zIndex === noteStore.maxZIndex && !isDragging && !isResizing
     }"
-    :style="{ left: note.x + 'px', top: note.y + 'px', zIndex: noteStore.getZIndex(note.id) }"
+    :style="{ 
+        left: note.x + 'px', 
+        top: note.y + 'px', 
+        zIndex: noteStore.getZIndex(note.id),
+        width: (note.width || 256) + 'px',
+        height: (note.height || 256) + 'px'
+    }"
   >
     <!-- Drag Handle -->
-    <div class="drag-handle" title="Drag to move" @mousedown="!isLocked && onMouseDown($event)">
+    <div class="drag-handle" @mousedown="!isLocked && onMouseDown($event)">
         <span>📌</span>
     </div>
 
     <!-- NOTE body -->
     <div class="note-card" @mousedown="onNoteFocus">
         
-        <!-- Header / Title -->
+        <!-- NOTE header -->
         <div class="note-header">
         
-        <!-- Editable Title -->
-        <input 
-            ref="titleInput"
-            v-model="currentTitle"
-            @focus="handleFocus"
-            @blur="handleBlur"
-            @keydown.enter="updateTitle"
-            type="text"
-            class="note-title-input"  
-            :class="{ 'opacity-50': isLocked }"
-            :disabled="isLocked"
-            placeholder="Title"
-        />
-        
-        <!-- Hidden Delete Button -->
-        <button 
-            @click="deleteNote"
-            class="delete-btn"
-            title="Delete Note"
-            v-if="!isLocked"
-        >
-            <span>❌</span>
-        </button>
+            <!-- Title -->
+            <input 
+                ref="titleInput"
+                v-model="currentTitle"
+                @focus="handleFocus"
+                @blur="handleBlur"
+                @keydown.enter="updateTitle"
+                type="text"
+                class="note-title-input"  
+                :class="{ 'opacity-50': isLocked }"
+                :disabled="isLocked"
+                placeholder="Title"
+            />
+            
+            <!-- Delete Button -->
+            <button 
+                @click="deleteNote"
+                class="delete-btn"
+                title="Delete Note"
+                v-if="!isLocked"
+            >
+                <span>❌</span>
+            </button>
+
         </div>
 
         <!-- Content -->
@@ -170,15 +199,13 @@ const { isDragging, onMouseDown } = useDragAndDrop(
                 placeholder="Type here..."
             ></textarea>
 
-
-
         </div>
 
-        <!-- 🔒 Locked Overlay (Full Card) -->
+        <!-- Editing Overlay -->
         <Transition name="lock-fade">
             <div v-if="isLocked" class="locked-overlay">
                 <div class="locked-badge">
-                    <span>✏ {{ note.editing?.user }} is typing<span class="typing-indicator"></span></span>
+                    <span>✏ {{ note.editing }} is typing<span class="typing-indicator"></span></span>
                 </div>
             </div>
         </Transition>
@@ -200,6 +227,9 @@ const { isDragging, onMouseDown } = useDragAndDrop(
             @close="toggleComments"
         />
     </div>
+
+    <!-- Resize Handle -->
+    <div class="resize-handle-corner" @mousedown="onResizeStart" v-if="!isLocked"></div>
   </div>
 </template>
 
@@ -229,8 +259,7 @@ const { isDragging, onMouseDown } = useDragAndDrop(
 .drag-handle {
     @apply 
     /* opacity animation */
-    opacity-0 
-    group-hover:opacity-100 
+    opacity-0 group-hover:opacity-100 
     transition-all duration-200 
 
     /* position */
@@ -238,7 +267,7 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     transform -translate-x-1/2 
 
     /* cursor */
-    cursor-grab active:cursor-grabbing 
+    cursor-grab active:cursor-grabbing select-none
 
     /* background */
     bg-white border 
@@ -262,7 +291,7 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     w-full h-full flex flex-col overflow-hidden relative
 
     /* appearance */
-    bg-yellow-100 rounded-lg 
+    bg-yellow-100 rounded-t-lg rounded-l-lg 
 
     /* shadow & transition */
     shadow-md hover:shadow-xl transition-shadow;
@@ -300,6 +329,9 @@ const { isDragging, onMouseDown } = useDragAndDrop(
 
     /* cursor */
     cursor-pointer
+
+    /* scale */
+    scale-75
 
     /* selection */
     select-none;
@@ -374,10 +406,7 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     text-sm font-bold tracking-wide
     
     /* layout */
-    flex items-center gap-2 
-    
-    /* animation */
-    select-none;
+    flex items-center gap-2 select-none;
 }
 
 /* Vue Transition for Lock Overlay */
@@ -405,5 +434,20 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     25% { content: '.'; }
     50% { content: '..'; }
     75% { content: '...'; }
+}
+
+.resize-handle-corner {
+    @apply 
+    /* position */
+    absolute bottom-0 right-0 w-0 h-0 
+    
+    /* border */
+    border-b-[12px] border-l-[12px] 
+    border-b-black/0 border-l-black/20 
+    hover:border-l-black/40 
+    rotate-180
+    
+    /* cursor */
+    cursor-nwse-resize z-50 rounded-br-lg transition-colors duration-200;
 }
 </style>

@@ -19,6 +19,8 @@ function createNote() {
         content: '',
         x: window.innerWidth / 2 - 128 + (Math.random() * 200 - 20),
         y: window.innerHeight / 2 - 128 + (Math.random() * 200 - 20),
+        width: 256,
+        height: 256,
         updatedBy: userStore.currentUser?.name || '',
         zIndex: 1,
         editing: null
@@ -35,9 +37,9 @@ function createNote() {
 
     <!-- Header -->
     <div class="board-header">
-        <h1 class="header-title">Collaborative Board</h1>
+        <h1 class="header-title">Team Notes</h1>
         <div class="user-badge">
-            Logged in as <span class="user-name">{{ userStore.currentUser?.name }}</span>
+            <span class="user-name">👨 {{ userStore.currentUser?.name }}</span>
         </div>
     </div>
 
@@ -97,7 +99,7 @@ function createNote() {
     p-4 
     
     /* interaction */
-    pointer-events-none;
+    pointer-events-none select-none;
 }
 
 .header-title {

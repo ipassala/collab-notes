@@ -7,9 +7,11 @@ export function createNote({ title = "", content = "", x = 100, y = 100, user })
         content,
         x,
         y,
-        zIndex: 1,
+        width: 256,       // Soporte para redimensionar
+        height: 256,
+        zIndex: 1,        // Soporte para traer al frente
+        editing: null,    // Soporte para lock de edición
         updatedBy: user,
-        editing: null,
         comments: [],
         timestamp: Date.now()
     };
