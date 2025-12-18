@@ -8,27 +8,25 @@ import { useUserStore } from "./users";
 export const useNoteStore = defineStore("notes", () => {
     const notes = ref<Note[]>([]);
 
-
     // Acciones
 
     function initBoard() {
         socket.emit("board:init", {});
     }
 
-    function createNote(notePayload?: Partial<NoteCreatePayload>) {
+    function createNote({ x, y }: { x: number; y: number }) {
         const userStore = useUserStore();
 
         const defaultNote: NoteCreatePayload = {
             title: '',
             content: '',
-            x: window.innerWidth / 2 - 128 + (Math.random() * 200 - 100),
-            y: window.innerHeight / 2 - 128 + (Math.random() * 200 - 100),
+            x,
+            y,
             width: 256,
             height: 256,
             updatedBy: userStore.currentUser?.name || '',
             zIndex: 1,
             editing: null,
-            ...notePayload
         };
 
         socket.emit("note:create", defaultNote);

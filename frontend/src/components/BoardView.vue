@@ -1,34 +1,51 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useNoteStore } from '@/stores/notes';
 import NoteItem from './NoteItem.vue';
-import { useUserStore } from '@/stores/users';
+import UserList from './UserList.vue';
 
 const noteStore = useNoteStore();
-const userStore = useUserStore();
 
-// Al montar el componente, se inicia el tablero
+// Refs
+const boardContainer = ref<HTMLElement | null>(null);
+
 onMounted(() => {
+    // Inicializa el tablero
     noteStore.initBoard();
+
+    // Centra el scroll al iniciar
+    nextTick(() => {
+        if (boardContainer.value) {
+            const { scrollWidth, clientWidth, scrollHeight, clientHeight } = boardContainer.value;
+            boardContainer.value.scrollLeft = (scrollWidth - clientWidth) / 2;
+            boardContainer.value.scrollTop = (scrollHeight - clientHeight) / 2;
+        }
+    });
 });
+
+function handleCreateNote() {
+    if (!boardContainer.value) 
+        return;
+
+    const { scrollLeft, scrollTop, clientWidth, clientHeight } = boardContainer.value;
+    
+    // Calcular el centro del área visible + offset aleatorio
+    const x = scrollLeft + (clientWidth / 2) - 128 + (Math.random() * 40 - 20);
+    const y = scrollTop + (clientHeight / 2) - 128 + (Math.random() * 40 - 20);
+
+    noteStore.createNote({ x, y });
+}
 
 </script>
 
 <template>
   <!-- Board Container -->
-  <div class="board-container">
+  <div class="board-container" ref="boardContainer">
     
-    <!-- Background Grid -->
-    <div class="board-background"></div>
-
     <!-- Header -->
     <div class="board-header">
         <h1 class="header-title">Team Notes</h1>
-        <div class="users-list">
-            <div v-for="user in userStore.users" :key="user.name" class="user-badge">
-                <span class="user-name">👨 {{ user.name }}</span>
-            </div>
-        </div>
+        <UserList />
     </div>
 
     <!-- Notes rendering -->
@@ -41,7 +58,7 @@ onMounted(() => {
     </div>
 
     <!-- Create Note Button -->
-    <button @click="noteStore.createNote()" class="create-button" title="Add Note">
+    <button @click="handleCreateNote" class="create-button" title="Add Note">
         <span class="create-button-text">New note ✏</span>
     </button>
   </div>
@@ -59,26 +76,29 @@ onMounted(() => {
     bg-gray-50 
     
     /* overflow */
-    overflow-hidden;
-}
+    overflow-auto
 
-.board-background {
-    @apply 
-    /* position */
-    absolute inset-0 
-    
-    /* appearance */
-    opacity-[0.2];
-    
-    /* grid pattern */
-    background-image: radial-gradient(#000 1px, transparent 1px);
-    background-size: 20px 20px;
+    /* Custom scrollbar styling */
+    [scrollbar-width:thin]
+    [scrollbar-color:theme(--color-gray-400/50)_transparent]
+
+    /* Webkit scrollbar (Chrome, Safari, Edge) */
+    [&::-webkit-scrollbar]:w-2.5
+    [&::-webkit-scrollbar]:h-2.5
+    [&::-webkit-scrollbar-track]:bg-transparent
+    [&::-webkit-scrollbar-thumb]:bg-gray-400/40
+    [&::-webkit-scrollbar-thumb]:rounded-full
+    [&::-webkit-scrollbar-thumb]:border-2
+    [&::-webkit-scrollbar-thumb]:border-transparent
+    [&::-webkit-scrollbar-thumb]:bg-clip-padding
+    [&::-webkit-scrollbar-thumb]:hover:bg-gray-400/70
+    [&::-webkit-scrollbar-corner]:bg-transparent;
 }
 
 .board-header {
     @apply 
     /* position */
-    absolute top-0 left-0 right-0 z-40
+    fixed top-0 left-0 right-0 z-40
     
     /* layout */
     flex justify-between items-start
@@ -99,53 +119,18 @@ onMounted(() => {
     pointer-events-auto select-none;
 }
 
-.users-list {
-    @apply
-    /* layout */
-    flex flex-col gap-2 items-end;
-}
-
-.user-badge {
-    @apply 
-    /* appearance */
-    bg-white/90 backdrop-blur-md rounded-full shadow-sm border border-gray-200
-    
-    /* typography */
-    text-sm text-gray-600 
-    
-    /* spacing */
-    px-3 py-2
-    
-    /* interaction */
-    pointer-events-auto
-    
-    /* transition */
-    transition-all duration-300;
-
-    animation: slide-in 0.3s ease-in-out;
-}
-
-@keyframes slide-in {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.user-name {
-    @apply 
-    /* typography */
-    font-bold text-blue-600;
-}
-
 .notes-canvas {
     @apply 
     /* layout */
-    w-full h-full relative;
+    relative
+    
+    /* Large canvas */
+    min-w-[3000px]
+    min-h-[3000px]
+
+    /* grid pattern */
+    bg-[radial-gradient(rgba(0,0,0,0.2)_1px,transparent_1px)]
+    [background-size:20px_20px];
 }
 
 .create-button {

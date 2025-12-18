@@ -205,7 +205,7 @@ const { isResizing, onResizeStart } = useResizable(
         <Transition name="lock-fade">
             <div v-if="isLocked" class="locked-overlay">
                 <div class="locked-badge">
-                    <span>✏ {{ note.editing }} is typing<span class="typing-indicator"></span></span>
+                    <span>✏ {{ note.editing }} is editing<span class="typing-indicator"></span></span>
                 </div>
             </div>
         </Transition>
