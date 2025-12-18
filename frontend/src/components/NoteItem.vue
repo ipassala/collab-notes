@@ -1,64 +1,77 @@
 <script setup lang="ts">
+/**
+ * NoteItem Component
+ * 
+ * Displays a single note on the board.
+ * Supports:
+ * - Drag and drop (via useDragAndDrop)
+ * - Editing title and content
+ * - Adding and viewing comments (via NoteComments)
+ * - Deleting
+ */
 import { ref, watch } from 'vue';
 import type { Note } from '@/types';
 import { useNoteStore } from '@/stores/notes';
 import { useDragAndDrop } from '@/composables/useDragAndDrop';
+import NoteComments from './NoteComments.vue';
 
+// Props
 const props = defineProps<{
-  note: Note;
+  note: Note; 
 }>();
 
+// Store
 const noteStore = useNoteStore();
-const showComments = ref(false);
-const newComment = ref('');
+
+// Template Refs
 const titleInput = ref<HTMLInputElement | null>(null);
+const contentInput = ref<HTMLTextAreaElement | null>(null);
+
+// Local State
 const currentTitle = ref(props.note.title);
 const currentContent = ref(props.note.content);
+const showComments = ref(false);
 
+// Watcher para el título de la nota
 watch(() => props.note.title, (val) => {
-    if (document.activeElement !== titleInput.value) {
+    if (document.activeElement !== titleInput.value)
         currentTitle.value = val;
-    }
 });
 
+// Watcher para el contenido de la nota
 watch(() => props.note.content, (val) => {
-     if (document.activeElement?.tagName !== 'TEXTAREA' || !document.activeElement?.closest('.note-' + props.note.id)) {
+    if (document.activeElement !== contentInput.value)
         currentContent.value = val;
-    }
 });
 
+// Actualiza el título de la nota en el store si ha cambiado.
 function updateTitle() {
-    if (currentTitle.value !== props.note.title) {
+    if (currentTitle.value !== props.note.title)
         noteStore.updateNote({ id: props.note.id, title: currentTitle.value });
-    }
 }
 
+// Actualiza el contenido de la nota en el store si ha cambiado.
 function updateContent() {
-    if (currentContent.value !== props.note.content) {
+    if (currentContent.value !== props.note.content)
         noteStore.updateNote({ id: props.note.id, content: currentContent.value });
-    }
 }
 
-function onNoteFocus() {
-    noteStore.bringToFront(props.note.id);
-}
-
-function deleteNote() {
-    noteStore.deleteNote(props.note.id);
-}
-
-function addComment() {
-  if (newComment.value.trim()) {
-    noteStore.addComment(props.note.id, newComment.value.trim());
-    newComment.value = '';
-  }
-}
-
+// Alterna la visibilidad de los comentarios
 function toggleComments() {
     showComments.value = !showComments.value;
 }
 
-// Drag and drop logic
+// Enfoca la nota y la trae al frente
+function onNoteFocus() {
+    noteStore.bringToFront(props.note.id);
+}
+
+// Elimina la nota actual
+function deleteNote() {
+    noteStore.deleteNote(props.note.id);
+}
+
+// Manejo del drag and drop
 const { isDragging, onMouseDown } = useDragAndDrop(
   () => ({ x: props.note.x, y: props.note.y }),
   (position) => {
@@ -118,6 +131,7 @@ const { isDragging, onMouseDown } = useDragAndDrop(
         <!-- Content -->
         <div class="note-content">
         <textarea 
+            ref="contentInput"
             v-model="currentContent"
             @focus="onNoteFocus"
             @blur="updateContent"
@@ -136,37 +150,12 @@ const { isDragging, onMouseDown } = useDragAndDrop(
         </div>
         
         <!-- Comments Section (Overlay) -->
-        <div v-if="showComments" class="comments-overlay">
-            <div class="comments-header">
-                <h4 class="font-bold text-sm text-gray-700">Comments</h4>
-                <button @click="toggleComments" class="text-gray-400 hover:text-gray-600">
-                    <span class="text-sm leading-none">❌</span>
-                </button>
-            </div>
-            <div class="comments-list">
-                <div v-for="comment in note.comments" :key="comment.id" class="comment-item">
-                    <span class="font-bold text-blue-600 block text-xs">{{ comment.user }}</span>
-                    <p class="text-gray-700">{{ comment.text }}</p>
-                </div>
-                <p v-if="!note.comments?.length" class="text-center text-gray-400 text-sm mt-4">No comments yet.</p>
-            </div>
-            <div class="p-2 border-t">
-                <div class="flex space-x-2">
-                    <input 
-                        v-model="newComment" 
-                        @keyup.enter="addComment" 
-                        type="text" 
-                        class="comment-input"
-                        placeholder="Write a comment..."
-                    >
-                    <button 
-                    @click="addComment"
-                    :disabled="!newComment.trim()"
-                    class="post-btn"
-                    >Post</button>
-                </div>
-            </div>
-        </div>
+        <NoteComments 
+            v-if="showComments" 
+            :note-id="note.id" 
+            :comments="note.comments" 
+            @close="toggleComments"
+        />
     </div>
   </div>
 </template>
@@ -316,70 +305,5 @@ const { isDragging, onMouseDown } = useDragAndDrop(
 
     /* spacing */
     px-2 py-0.5;
-}
-
-.comments-overlay {
-    @apply 
-    /* position */
-    absolute inset-0 z-10 
-    
-    /* layout */
-    flex flex-col
-
-    /* appearance */
-    bg-white/95;
-}
-
-.comments-header {
-    @apply 
-    /* layout */
-    flex justify-between items-center 
-
-    /* appearance */
-    border-b
-
-    /* spacing */
-    p-2;
-}
-
-.comments-list {
-    @apply 
-    /* layout */
-    grow overflow-y-auto 
-    /* spacing */
-    p-2 space-y-2;
-}
-
-.comment-item {
-    @apply 
-    /* appearance */
-    text-sm bg-gray-50 rounded
-
-    /* spacing */
-    p-2;
-}
-
-.comment-input {
-    @apply 
-    /* layout */
-    grow 
-
-    /* appearance */
-    border rounded outline-none focus:border-blue-500
-
-    /* typography */
-    text-sm
-
-    /* spacing */
-    px-2 py-1;
-}
-
-.post-btn {
-    @apply 
-    /* typography */
-    font-bold text-sm text-blue-600 hover:text-blue-800 
-
-    /* disabled state */
-    disabled:opacity-50;
 }
 </style>
