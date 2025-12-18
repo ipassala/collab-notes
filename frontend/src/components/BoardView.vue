@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue';
 import { useNoteStore } from '@/stores/notes';
+import { useDraggableScroll } from '@/composables/useDraggableScroll';
 import NoteItem from './NoteItem.vue';
 import UserList from './UserList.vue';
 
@@ -8,6 +9,9 @@ const noteStore = useNoteStore();
 
 // Refs
 const boardContainer = ref<HTMLElement | null>(null);
+
+// Drag to scroll
+const { onMouseDown, isDragging } = useDraggableScroll(boardContainer);
 
 onMounted(() => {
     // Inicializa el tablero
@@ -40,7 +44,12 @@ function handleCreateNote() {
 
 <template>
   <!-- Board Container -->
-  <div class="board-container" ref="boardContainer">
+  <div 
+    class="board-container" 
+    ref="boardContainer"
+    @mousedown="onMouseDown"
+    :class="{ 'cursor-grab': !isDragging, 'cursor-grabbing': isDragging }"
+  >
     
     <!-- Header -->
     <div class="board-header">
@@ -98,7 +107,7 @@ function handleCreateNote() {
 .board-header {
     @apply 
     /* position */
-    fixed top-0 left-0 right-0 z-40
+    fixed top-0 left-0 right-0 z-999999
     
     /* layout */
     flex justify-between items-start
@@ -130,13 +139,16 @@ function handleCreateNote() {
 
     /* grid pattern */
     bg-[radial-gradient(rgba(0,0,0,0.2)_1px,transparent_1px)]
-    [background-size:20px_20px];
+    [background-size:20px_20px]
+    
+    /* interaction */
+    pointer-events-none;
 }
 
 .create-button {
     @apply 
     /* position */
-    fixed bottom-8 right-8 z-50
+    fixed bottom-8 right-8 z-99999
     
     /* layout */
     flex items-center justify-center 

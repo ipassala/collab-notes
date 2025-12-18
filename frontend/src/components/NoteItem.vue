@@ -2,12 +2,13 @@
 /**
  * NoteItem Component
  * 
- * Displays a single note on the board.
- * Supports:
- * - Drag and drop (via useDragAndDrop)
+ * Displays a single note on the board. Supports:
  * - Editing title and content
- * - Adding and viewing comments (via NoteComments)
+ * - Real-time locking (multi-user)
+ * - Adding and viewing comments
  * - Deleting
+ * - Drag and drop (via useDragAndDrop)
+ * - Resizing (via useResizable)
  */
 import { ref, watch, computed } from 'vue';
 import type { Note } from '@/types';
@@ -39,16 +40,20 @@ const showComments = ref(false);
 const isLocked = computed(() => !!props.note.editing && props.note.editing !== userStore.currentUser?.name);
 
 // Watcher para el título de la nota
+// Si el título cambia desde fuera (por ejemplo, otro usuario edita la nota), se actualiza el título
 watch(() => props.note.title, (val) => {
     if (document.activeElement !== titleInput.value)
         currentTitle.value = val;
 });
 
 // Watcher para el contenido de la nota
+// Si el contenido cambia desde fuera, se actualiza el contenido
 watch(() => props.note.content, (val) => {
     if (document.activeElement !== contentInput.value)
         currentContent.value = val;
 });
+
+// --- ACTIONS ---
 
 // Actualiza el título de la nota en el store si ha cambiado
 function updateTitle() {
@@ -77,18 +82,24 @@ function deleteNote() {
     noteStore.deleteNote(props.note.id);
 }
 
+// Manejo del focus
+// Cuando hacemos click en la nota, se pone activa el modo edición
 function handleFocus() {
     if (isLocked.value) return;
     noteStore.setEditing(props.note.id, true);
 }
 
+// Manejo del blur
+// Cuando hacemos click fuera de la nota, se graban los datos y se sale del modo edición
 function handleBlur() {
     noteStore.setEditing(props.note.id, false);
     updateTitle();
     updateContent();
 }
 
-// Manejo del drag and drop
+// Manejo del drag and drop 
+// Se encarga de mover la nota y de actualizar su posición en el backend
+// Utiliza el composable useDragAndDrop
 const { isDragging, onMouseDown } = useDragAndDrop(
   () => ({ x: props.note.x, y: props.note.y }),
   (position) => {
@@ -96,9 +107,12 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     props.note.y = position.y;
   },
   {
+    // Cuando empieza a arrastrar seteo el estado de edición
     onDragStart: () => {
         noteStore.setEditing(props.note.id, true);
     },
+    // Cuando termina de arrastrar actualizo la nota 
+    // con los nuevos datos de posición en el backend
     onDragEnd: (position) => {
       noteStore.updateNote({
         id: props.note.id,
@@ -111,6 +125,8 @@ const { isDragging, onMouseDown } = useDragAndDrop(
 );
 
 // Manejo del redimensionamiento
+// Se encarga de redimensionar la nota y de actualizar su tamaño en el backend
+// Utiliza el composable useResizable
 const { isResizing, onResizeStart } = useResizable(
     () => ({ width: props.note.width, height: props.note.height }),
     (size) => {
@@ -119,9 +135,12 @@ const { isResizing, onResizeStart } = useResizable(
     },
     isLocked,
     {
+        // Cuando empieza a redimensionar seteo el estado de edición
         onResizeStart: () => {
             noteStore.setEditing(props.note.id, true);
         },
+        // Cuando termina de redimensionar actualizo la nota 
+        // con los nuevos datos de tamaño en el backend
         onResizeEnd: (size) => {
             noteStore.updateNote({ 
                 id: props.note.id, 
@@ -137,17 +156,19 @@ const { isResizing, onResizeStart } = useResizable(
 <template>
   <div 
     class="note-wrapper group"
-    :class="{ 
-      'transition-all duration-300 ease-out': !isDragging && !isResizing,
-      'select-none': note.zIndex !== noteStore.maxZIndex || isDragging || isResizing,
-      'select-text': note.zIndex === noteStore.maxZIndex && !isDragging && !isResizing
-    }"
     :style="{ 
+        // manejo dinámico de posición, tamaño y zIndex
         left: note.x + 'px', 
         top: note.y + 'px', 
         zIndex: noteStore.getZIndex(note.id),
         width: (note.width || 256) + 'px',
         height: (note.height || 256) + 'px'
+    }"
+    :class="{ 
+        // Manejo da las animaciones cuando no está siendo editada
+        // Esto permite que el cambio de posición y redimensionamiento
+        // se realice de forma suave para los usuarios que no están editando la nota
+        'transition-all duration-300 ease-out': !isDragging && !isResizing,
     }"
   >
     <!-- Drag Handle -->
@@ -246,7 +267,10 @@ const { isResizing, onResizeStart } = useResizable(
 .note-wrapper {
     @apply 
     /* layout */
-    absolute w-64 h-64;
+    absolute w-64 h-64
+    
+    /* interaction */
+    pointer-events-auto;
 
     /* pop-in animation */
     animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;

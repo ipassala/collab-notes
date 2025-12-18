@@ -11,7 +11,7 @@ interface UseDragAndDropOptions {
 }
 
 export function useDragAndDrop(
-    getInitialPosition: () => DragPosition,
+    getPosition: () => DragPosition,
     updatePosition: (position: DragPosition) => void,
     options: UseDragAndDropOptions = {}
 ) {
@@ -28,10 +28,12 @@ export function useDragAndDrop(
         startX.value = e.clientX;
         startY.value = e.clientY;
 
-        const initialPosition = getInitialPosition();
+        // Guardo la posición inicial
+        const initialPosition = getPosition();
         initialX.value = initialPosition.x;
         initialY.value = initialPosition.y;
 
+        // Asocio funciones a los eventos de click
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
     }
@@ -39,9 +41,11 @@ export function useDragAndDrop(
     function onMouseMove(e: MouseEvent) {
         if (!isDragging.value) return;
 
+        // Calculo la diferencia entre la posición inicial y la actual
         const dx = e.clientX - startX.value;
         const dy = e.clientY - startY.value;
 
+        // Actualizo la posición
         updatePosition({
             x: initialX.value + dx,
             y: initialY.value + dy,
@@ -51,11 +55,13 @@ export function useDragAndDrop(
     function onMouseUp() {
         if (!isDragging.value) return;
 
+        // Desasocio funciones a los eventos de click
         isDragging.value = false;
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
 
-        const finalPosition = getInitialPosition();
+        // Actualizo la posición final
+        const finalPosition = getPosition();
         options.onDragEnd?.(finalPosition);
     }
 

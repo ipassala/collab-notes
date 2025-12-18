@@ -18,7 +18,12 @@ const userStore = useUserStore();
 .users-list {
     @apply
     /* layout */
-    flex flex-col gap-2 items-end;
+    flex flex-col gap-2 items-end
+
+    mr-2
+    
+    /*scale-[90%] origin-top-right*/
+    ;
 }
 
 .user-badge {
