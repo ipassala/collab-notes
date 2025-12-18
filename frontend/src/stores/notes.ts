@@ -1,23 +1,11 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { socket } from "./socket";
 import type { Note, NoteCreatePayload, NoteUpdatePayload, NoteDeletePayload, NoteCommentPayload, NoteDeletedPayload, NoteCommentedPayload, BoardLoadPayload } from "../types";
 
 export const useNoteStore = defineStore("notes", () => {
     const notes = ref<Note[]>([]);
-    const maxZIndex = ref(1);
-    const zIndexMap = ref<Map<string, number>>(new Map());
 
-    // Funciones para z-index
-
-    function bringToFront(noteId: string) {
-        maxZIndex.value += 1;
-        zIndexMap.value.set(noteId, maxZIndex.value);
-    }
-
-    function getZIndex(noteId: string): number {
-        return zIndexMap.value.get(noteId) || 1;
-    }
 
     // Acciones
 
@@ -40,6 +28,24 @@ export const useNoteStore = defineStore("notes", () => {
     function addComment(noteId: string, text: string) {
         socket.emit("note:comment", { noteId, text } as NoteCommentPayload);
     }
+
+    function setEditing(noteId: string, isEditing: boolean) {
+        socket.emit("note:editing", { noteId, isEditing });
+    }
+
+    function bringToFront(noteId: string) {
+        const currentMax = Math.max(...notes.value.map((n) => n.zIndex || 0), 0);
+        const newZ = currentMax + 1;
+        updateNote({ id: noteId, zIndex: newZ });
+    }
+
+    function getZIndex(noteId: string): number {
+        const note = notes.value.find((n) => n.id === noteId);
+        return note ? note.zIndex : 1;
+    }
+
+    const maxZIndex = computed(() => Math.max(...notes.value.map((n) => n.zIndex || 0), 0));
+
 
     // Eventos
 
@@ -79,7 +85,9 @@ export const useNoteStore = defineStore("notes", () => {
         updateNote,
         deleteNote,
         addComment,
+        setEditing,
         bringToFront,
         getZIndex,
+        maxZIndex,
     };
 });

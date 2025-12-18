@@ -17,7 +17,9 @@ export interface Note {
     content: string;
     x: number;
     y: number;
+    zIndex: number;
     updatedBy: string;
+    editing: { state: boolean; user: string } | null;
     comments: Comment[];
     timestamp: number;
 }
@@ -45,6 +47,11 @@ export type NoteDeletedPayload = Pick<Note, 'id'>;
 export interface NoteCommentPayload {
     noteId: string;
     text: string;
+}
+
+export interface NoteEditingPayload {
+    noteId: string;
+    isEditing: boolean;
 }
 
 export interface NoteCommentedPayload {

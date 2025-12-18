@@ -1,15 +1,18 @@
 <script setup lang="ts">
 /**
  * LoginDialog Component
- * 
  * Displays a modal for the user to enter their name and join the board.
  */
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/users';
 
+// Store
 const userStore = useUserStore();
+
+// Refs
 const username = ref('');
 
+// Función para agregar usuario al tablero
 function join() {
   if (username.value.trim()) {
     userStore.joinBoard({ name: username.value });

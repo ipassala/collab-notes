@@ -9,9 +9,10 @@
  * - Adding and viewing comments (via NoteComments)
  * - Deleting
  */
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { Note } from '@/types';
 import { useNoteStore } from '@/stores/notes';
+import { useUserStore } from '@/stores/users';
 import { useDragAndDrop } from '@/composables/useDragAndDrop';
 import NoteComments from './NoteComments.vue';
 
@@ -22,8 +23,9 @@ const props = defineProps<{
 
 // Store
 const noteStore = useNoteStore();
+const userStore = useUserStore();
 
-// Template Refs
+// Refs
 const titleInput = ref<HTMLInputElement | null>(null);
 const contentInput = ref<HTMLTextAreaElement | null>(null);
 
@@ -31,6 +33,11 @@ const contentInput = ref<HTMLTextAreaElement | null>(null);
 const currentTitle = ref(props.note.title);
 const currentContent = ref(props.note.content);
 const showComments = ref(false);
+
+// Computed
+const isLocked = computed(() => {
+    return !!(props.note.editing && props.note.editing.state && props.note.editing.user !== userStore.currentUser?.name);
+});
 
 // Watcher para el título de la nota
 watch(() => props.note.title, (val) => {
@@ -44,13 +51,13 @@ watch(() => props.note.content, (val) => {
         currentContent.value = val;
 });
 
-// Actualiza el título de la nota en el store si ha cambiado.
+// Actualiza el título de la nota en el store si ha cambiado
 function updateTitle() {
     if (currentTitle.value !== props.note.title)
         noteStore.updateNote({ id: props.note.id, title: currentTitle.value });
 }
 
-// Actualiza el contenido de la nota en el store si ha cambiado.
+// Actualiza el contenido de la nota en el store si ha cambiado
 function updateContent() {
     if (currentContent.value !== props.note.content)
         noteStore.updateNote({ id: props.note.id, content: currentContent.value });
@@ -71,6 +78,17 @@ function deleteNote() {
     noteStore.deleteNote(props.note.id);
 }
 
+function handleFocus() {
+    if (isLocked.value) return;
+    noteStore.setEditing(props.note.id, true);
+}
+
+function handleBlur() {
+    noteStore.setEditing(props.note.id, false);
+    updateTitle();
+    updateContent();
+}
+
 // Manejo del drag and drop
 const { isDragging, onMouseDown } = useDragAndDrop(
   () => ({ x: props.note.x, y: props.note.y }),
@@ -79,13 +97,16 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     props.note.y = position.y;
   },
   {
-    onDragStart: () => noteStore.bringToFront(props.note.id),
+    onDragStart: () => {
+        noteStore.setEditing(props.note.id, true);
+    },
     onDragEnd: (position) => {
       noteStore.updateNote({
         id: props.note.id,
         x: position.x,
         y: position.y,
       });
+      noteStore.setEditing(props.note.id, false);
     },
   }
 );
@@ -94,27 +115,35 @@ const { isDragging, onMouseDown } = useDragAndDrop(
 <template>
   <div 
     class="note-wrapper group"
-    :class="`note-${note.id}`"
+    :class="{ 
+      'transition-all duration-300 ease-out': !isDragging,
+      'select-none': note.zIndex !== noteStore.maxZIndex,
+      'select-text': note.zIndex === noteStore.maxZIndex
+    }"
     :style="{ left: note.x + 'px', top: note.y + 'px', zIndex: noteStore.getZIndex(note.id) }"
   >
     <!-- Drag Handle -->
-    <div class="drag-handle" title="Drag to move" @mousedown="onMouseDown">
-          <span class="text-lg leading-none select-none">📌</span>
+    <div class="drag-handle" title="Drag to move" @mousedown="!isLocked && onMouseDown($event)">
+        <span>📌</span>
     </div>
 
     <!-- NOTE body -->
     <div class="note-card" @mousedown="onNoteFocus">
+        
         <!-- Header / Title -->
         <div class="note-header">
+        
         <!-- Editable Title -->
         <input 
             ref="titleInput"
             v-model="currentTitle"
-            @focus="onNoteFocus"
-            @blur="updateTitle"
+            @focus="handleFocus"
+            @blur="handleBlur"
             @keydown.enter="updateTitle"
             type="text"
-            class="note-title-input"
+            class="note-title-input"  
+            :class="{ 'opacity-50': isLocked }"
+            :disabled="isLocked"
             placeholder="Title"
         />
         
@@ -123,22 +152,36 @@ const { isDragging, onMouseDown } = useDragAndDrop(
             @click="deleteNote"
             class="delete-btn"
             title="Delete Note"
+            v-if="!isLocked"
         >
-            <span class="text-sm leading-none">❌</span>
+            <span>❌</span>
         </button>
         </div>
 
         <!-- Content -->
-        <div class="note-content">
-        <textarea 
-            ref="contentInput"
-            v-model="currentContent"
-            @focus="onNoteFocus"
-            @blur="updateContent"
-            class="note-textarea"
-            placeholder="Type here..."
-        ></textarea>
+        <div class="note-content relative">
+            <textarea 
+                ref="contentInput"
+                v-model="currentContent"
+                @focus="handleFocus"
+                @blur="handleBlur"
+                class="note-textarea"
+                :disabled="isLocked"
+                placeholder="Type here..."
+            ></textarea>
+
+
+
         </div>
+
+        <!-- 🔒 Locked Overlay (Full Card) -->
+        <Transition name="lock-fade">
+            <div v-if="isLocked" class="locked-overlay">
+                <div class="locked-badge">
+                    <span>✏ {{ note.editing?.user }} is typing<span class="typing-indicator"></span></span>
+                </div>
+            </div>
+        </Transition>
 
         <!-- Footer / Comments Trigger -->
         <div class="note-footer">
@@ -256,7 +299,10 @@ const { isDragging, onMouseDown } = useDragAndDrop(
     hover:opacity-100
 
     /* cursor */
-    cursor-pointer;
+    cursor-pointer
+
+    /* selection */
+    select-none;
 }
 
 .note-content {
@@ -305,5 +351,59 @@ const { isDragging, onMouseDown } = useDragAndDrop(
 
     /* spacing */
     px-2 py-0.5;
+}
+
+.locked-overlay {
+    @apply 
+    /* layout */
+    absolute inset-0 flex items-center justify-center z-20
+    
+    /* glass effect */
+    backdrop-sepia-[0.15] backdrop-blur-[2px] rounded-lg;
+}
+
+.locked-badge {
+    @apply 
+    /* appearance */
+    bg-blue-600 text-white
+    
+    /* shape */
+    px-4 py-2 rounded-md shadow-md 
+    
+    /* typography */
+    text-sm font-bold tracking-wide
+    
+    /* layout */
+    flex items-center gap-2 
+    
+    /* animation */
+    select-none;
+}
+
+/* Vue Transition for Lock Overlay */
+.lock-fade-enter-active,
+.lock-fade-leave-active {
+    transition: all 0.2s ease;
+}
+
+.lock-fade-enter-from,
+.lock-fade-leave-to {
+    opacity: 0;
+    backdrop-filter: grayscale(0);
+}
+
+.typing-indicator::after {
+    content: '';
+    animation: ellipsis 1s infinite;
+    display: inline-block;
+    width: 12px;
+    text-align: left;
+}
+
+@keyframes ellipsis {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
 }
 </style>

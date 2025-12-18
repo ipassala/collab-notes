@@ -84,8 +84,50 @@ export default function socketHandlers(io, socket) {
         }
     });
 
-    // --- 7. Manejar desconexión ---
+    // --- 7. Manejar bloqueo/edición ---
+    socket.on("note:editing", ({ noteId, isEditing }) => {
+        // console.log(`🔒 Editing state change: Node ${noteId} -> ${isEditing} by ${socket.id}`);
+        try {
+            const note = state.notes.find((n) => n.id === noteId);
+            if (note) {
+                if (isEditing) {
+                    // Si intenta editar, verificamos que no esté bloqueada por otro
+                    if (!note.editing || note.editing.user === state.users[socket.id]?.name) {
+                        // Calcular nuevo z-index
+                        const currentMaxResponse = state.notes.reduce((max, n) => Math.max(max, n.zIndex || 0), 0);
+                        note.zIndex = currentMaxResponse + 1;
+
+                        note.editing = {
+                            state: true,
+                            user: state.users[socket.id]?.name || "unknown"
+                        };
+                        io.emit("note:updated", note);
+                    }
+                } else {
+                    // Si deja de editar, liberamos solo si era el dueño del bloqueo
+                    if (note.editing && note.editing.user === state.users[socket.id]?.name) {
+                        note.editing = null;
+                        io.emit("note:updated", note);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    // --- 8. Manejar desconexión ---
     socket.on("disconnect", () => {
+        const userName = state.users[socket.id]?.name;
+
+        // Liberar notas bloqueadas por este usuario
+        state.notes.forEach(note => {
+            if (note.editing && note.editing.user === userName) {
+                note.editing = null;
+                io.emit("note:updated", note);
+            }
+        });
+
         delete state.users[socket.id];
         io.emit("presence:users", { users: Object.values(state.users) });
         console.log(`❌ Cliente desconectado: ${socket.id}`);

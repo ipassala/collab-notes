@@ -7,18 +7,21 @@ import { useUserStore } from '@/stores/users';
 const noteStore = useNoteStore();
 const userStore = useUserStore();
 
+// Al montar el componente, se inicia el tablero
 onMounted(() => {
     noteStore.initBoard();
 });
 
+// Función para crear una nueva nota
 function createNote() {    
-    // Create new note with random position (x, y)
     noteStore.createNote({
         title: '',
         content: '',
         x: window.innerWidth / 2 - 128 + (Math.random() * 200 - 20),
         y: window.innerHeight / 2 - 128 + (Math.random() * 200 - 20),
-        updatedBy: userStore.currentUser?.name || ''
+        updatedBy: userStore.currentUser?.name || '',
+        zIndex: 1,
+        editing: null
     });
 }
 </script>

@@ -7,7 +7,9 @@ export function createNote({ title = "", content = "", x = 100, y = 100, user })
         content,
         x,
         y,
+        zIndex: 1,
         updatedBy: user,
+        editing: null,
         comments: [],
         timestamp: Date.now()
     };
