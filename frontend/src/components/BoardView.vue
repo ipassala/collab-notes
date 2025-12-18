@@ -12,20 +12,6 @@ onMounted(() => {
     noteStore.initBoard();
 });
 
-// Función para crear una nueva nota
-function createNote() {    
-    noteStore.createNote({
-        title: '',
-        content: '',
-        x: window.innerWidth / 2 - 128 + (Math.random() * 200 - 20),
-        y: window.innerHeight / 2 - 128 + (Math.random() * 200 - 20),
-        width: 256,
-        height: 256,
-        updatedBy: userStore.currentUser?.name || '',
-        zIndex: 1,
-        editing: null
-    });
-}
 </script>
 
 <template>
@@ -38,8 +24,10 @@ function createNote() {
     <!-- Header -->
     <div class="board-header">
         <h1 class="header-title">Team Notes</h1>
-        <div class="user-badge">
-            <span class="user-name">👨 {{ userStore.currentUser?.name }}</span>
+        <div class="users-list">
+            <div v-for="user in userStore.users" :key="user.name" class="user-badge">
+                <span class="user-name">👨 {{ user.name }}</span>
+            </div>
         </div>
     </div>
 
@@ -53,7 +41,7 @@ function createNote() {
     </div>
 
     <!-- Create Note Button -->
-    <button @click="createNote" class="create-button" title="Add Note">
+    <button @click="noteStore.createNote()" class="create-button" title="Add Note">
         <span class="create-button-text">New note ✏</span>
     </button>
   </div>
@@ -93,7 +81,7 @@ function createNote() {
     absolute top-0 left-0 right-0 z-40
     
     /* layout */
-    flex justify-between 
+    flex justify-between items-start
     
     /* spacing */
     p-4 
@@ -111,19 +99,41 @@ function createNote() {
     pointer-events-auto select-none;
 }
 
+.users-list {
+    @apply
+    /* layout */
+    flex flex-col gap-2 items-end;
+}
+
 .user-badge {
     @apply 
     /* appearance */
-    bg-white/80 backdrop-blur-md rounded-full shadow-sm border border-gray-200
+    bg-white/90 backdrop-blur-md rounded-full shadow-sm border border-gray-200
     
     /* typography */
     text-sm text-gray-600 
     
     /* spacing */
-    px-3 py-1 
+    px-3 py-2
     
     /* interaction */
-    pointer-events-auto;
+    pointer-events-auto
+    
+    /* transition */
+    transition-all duration-300;
+
+    animation: slide-in 0.3s ease-in-out;
+}
+
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 .user-name {

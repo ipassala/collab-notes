@@ -36,7 +36,7 @@ export interface Comment {
 // Tipos para los payload de eventos
 
 export type UserJoinPayload = User;
-export type BoardLoadPayload = { notes: Note[] };
+export type BoardLoadPayload = { notes: Note[]; users: User[] };
 
 export type NoteCreatePayload = Omit<Note, 'id' | 'timestamp' | 'comments'>;
 export type NoteUpdatePayload = Partial<Omit<Note, 'timestamp' | 'comments' | 'updatedBy'>>;

@@ -14,7 +14,10 @@ export default function socketHandlers(io, socket) {
     // --- 2. Inicializar tablero ---
     socket.on("board:init", () => {
         console.log(`📋 Board init requested by ${socket.id}`);
-        socket.emit("board:data", { notes: state.notes });
+        socket.emit("board:data", {
+            notes: state.notes,
+            users: Object.values(state.users)
+        });
     });
 
     // --- 3. Crear nota ---

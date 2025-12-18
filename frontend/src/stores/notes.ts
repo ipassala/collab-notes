@@ -3,6 +3,8 @@ import { ref, computed } from "vue";
 import { socket } from "./socket";
 import type { Note, NoteCreatePayload, NoteUpdatePayload, NoteDeletePayload, NoteCommentPayload, NoteDeletedPayload, NoteCommentedPayload, BoardLoadPayload } from "../types";
 
+import { useUserStore } from "./users";
+
 export const useNoteStore = defineStore("notes", () => {
     const notes = ref<Note[]>([]);
 
@@ -13,8 +15,23 @@ export const useNoteStore = defineStore("notes", () => {
         socket.emit("board:init", {});
     }
 
-    function createNote(newNote: NoteCreatePayload) {
-        socket.emit("note:create", newNote);
+    function createNote(notePayload?: Partial<NoteCreatePayload>) {
+        const userStore = useUserStore();
+
+        const defaultNote: NoteCreatePayload = {
+            title: '',
+            content: '',
+            x: window.innerWidth / 2 - 128 + (Math.random() * 200 - 100),
+            y: window.innerHeight / 2 - 128 + (Math.random() * 200 - 100),
+            width: 256,
+            height: 256,
+            updatedBy: userStore.currentUser?.name || '',
+            zIndex: 1,
+            editing: null,
+            ...notePayload
+        };
+
+        socket.emit("note:create", defaultNote);
     }
 
     function updateNote(updatedNote: NoteUpdatePayload) {

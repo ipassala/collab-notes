@@ -24,8 +24,8 @@ export const useUserStore = defineStore("users", () => {
 
     // Eventos
 
-    socket.on("board:data", (payload: { board: Board }) => {
-        users.value = payload.board?.users || [];
+    socket.on("board:data", (payload: { users: User[] }) => {
+        users.value = payload.users || [];
     });
 
     socket.on("presence:users", (payload: { users: User[] }) => {
