@@ -72,8 +72,8 @@ function toggleComments() {
     showComments.value = !showComments.value;
 }
 
-// Enfoca la nota y la trae al frente
-function onNoteFocus() {
+// Trae la nota al frente
+function bringToFront() {
     noteStore.bringToFront(props.note.id);
 }
 
@@ -177,7 +177,7 @@ const { isResizing, onResizeStart } = useResizable(
     </div>
 
     <!-- NOTE body -->
-    <div class="note-card" @mousedown="onNoteFocus">
+    <div class="note-card" @mousedown="bringToFront">
         
         <!-- NOTE header -->
         <div class="note-header">
@@ -231,7 +231,7 @@ const { isResizing, onResizeStart } = useResizable(
             </div>
         </Transition>
 
-        <!-- Footer / Comments Trigger -->
+        <!-- Footer -->
         <div class="note-footer">
             <div class="footer-info">
                 <span v-if="note.updatedBy" class="footer-user">
@@ -247,7 +247,7 @@ const { isResizing, onResizeStart } = useResizable(
             </button>
         </div>
         
-        <!-- Comments Section (Overlay) -->
+        <!-- Comments Section -->
         <Transition name="comments-slide">
             <NoteComments 
                 v-if="showComments" 
@@ -376,7 +376,7 @@ const { isResizing, onResizeStart } = useResizable(
     cursor-pointer
 
     /* scale */
-    scale-75
+    scale-75 origin-right
 
     /* selection */
     select-none;

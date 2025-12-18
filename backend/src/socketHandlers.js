@@ -25,8 +25,8 @@ export default function socketHandlers(io, socket) {
         console.log(`📝 Creating note:`, data);
         try {
             const note = createNote({
-                ...data, user:
-                    state.users[socket.id]?.name || "unknown"
+                ...data,
+                user: state.users[socket.id]?.name || "unknown"
             });
             state.notes.push(note);
             io.emit("note:created", note);

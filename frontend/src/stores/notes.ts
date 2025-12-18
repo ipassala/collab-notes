@@ -25,7 +25,7 @@ export const useNoteStore = defineStore("notes", () => {
             width: 256,
             height: 256,
             updatedBy: userStore.currentUser?.name || '',
-            zIndex: 1,
+            zIndex: maxZIndex.value + 1,
             editing: null,
         };
 
