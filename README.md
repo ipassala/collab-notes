@@ -1,4 +1,4 @@
-# Reto Técnico Vue - Real-time Collaborative Board
+# Real-time Team Notes
 
 Este proyecto es un tablero colaborativo en tiempo real donde los usuarios pueden crear, editar, mover, redimensionar y eliminar notas. Los cambios se reflejan instantáneamente para todos los usuarios conectados.
 

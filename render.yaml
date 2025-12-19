@@ -18,6 +18,9 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://backend-8kcl.onrender.com/
     routes:
       - type: rewrite
         source: /*

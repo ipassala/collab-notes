@@ -28,7 +28,7 @@ function join() {
     <div class="dialog-card">
       
       <!-- Header -->
-      <h2 class="dialog-title">Welcome!</h2>
+      <h2 class="dialog-title">Team Notes</h2>
       <p class="dialog-subtitle">Enter your name to join the collaborative board.</p>
       
       <!-- Login Form -->
@@ -41,7 +41,7 @@ function join() {
             type="text" 
             id="username"
             class="input-field"
-            placeholder="e.g. Alice"
+            placeholder="Your name"
           />
         </div>
         
