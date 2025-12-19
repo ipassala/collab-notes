@@ -89,6 +89,7 @@ sequenceDiagram
     
     UserA->>Server: note:update {id, x, y}
     Server->>Server: Actualiza estado
+    Server-->>UserA: note:updated (Confirmación)
     Server-->>UserB: note:updated (La nota se mueve en la pantalla de B)
 ```
 
@@ -103,9 +104,10 @@ sequenceDiagram
 ## 🛠 Limitaciones conocidas
 
 - No se implementó persistencia en base de datos por limitaciones de tiempo.
+- Falta testear en modo producción.
 - No hay manejo para colisión de usuarios con el mismo nombre, se debería implementar manejo de ID única por usuario (además de la ID de canal de socket)
-- Condiciones de borde extremas no testeadas.
 - Comportamiento del cuadro de comentarios cuando se seleccionan otras notas podría ser mejorado.
 - Si se arrastra una nota hacia la esquina del canvas, puede que quede inaccesible (fuera del scroll máximo de la ventana del browser).
+
 
 
